@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Helvetica Neue", sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Navbar */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 50px;
+      background-color: #fff;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .home-button {
+      margin-left: 16px;
+      font-size: 16px;
+      color: #333;
+      text-decoration: none;
+      font-weight: 600;
+      background-color: #f0f0f0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: background-color 0.2s ease;
+    }
+
+    .home-button:hover {
+      background-color: #e0e0e0;
+    }
+
+    /* Chat Area */
+    .chat-area {
+      flex: 1;
+      margin-top: 50px;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message-block {
+      padding: 16px 0;
+      border-top: 1px solid #eee;
+    }
+
+    .message {
+      padding: 4px 0;
+      max-width: 100%;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      text-align: right;
+      font-weight: 500;
+      color: black;
+    }
+
+    .bot {
+      font-family: "Helvetica Neue", sans-serif;
+      background-color: #f4f4f4;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    /* Input Bar */
+    .input-bar {
+      padding: 20px;
+      background-color: white;
+      border-top: 1px solid #ddd;
+      position: sticky;
+      bottom: 0;
+      z-index: 999;
+      display: flex;
+      justify-content: center;
+    }
+
+    .input-container {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+    }
+
+    input[type="text"] {
+  flex: 1;
+  padding: 14px 16px;
+  font-size: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px; /* Fully rounded like ChatGPT */
+  outline: none;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+input[type="text"]:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input-wrapper input[type="text"] {
+  width: 100%;
+  padding: 14px 50px 14px 16px; /* Add right padding for button space */
+  font-size: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 99999px;
+  outline: none;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.input-wrapper button {
+  position: absolute;
+  right: 4px;
+  top: 49%;
+  transform: translateY(-50%) !important;
+  padding: 12px 17px;
+  background-color: black;
+  color: white;
+  border: none;
+  border-radius: 99999px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.input-wrapper button:hover {
+  background-color: grey
+}
+
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="/" class="home-button">☰ Home</a>
+</div>
+
+<div class="chat-area" id="chat-scroll">
+  <div class="chat-container" id="chat">
+    <!-- Messages will go here -->
+  </div>
+</div>
+
+
+
+<div class="input-bar">
+  <div class="input-container">
+    <div class="input-wrapper">
+      <input type="text" id="userInput" placeholder="Ask anything " autocomplete="off" />
+      <button onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  const chat = document.getElementById('chat');
+  const scrollArea = document.getElementById('chat-scroll');
+  const input = document.getElementById('userInput');
+
+  function addMessage(text, sender) {
+    const block = document.createElement('div');
+    block.className = 'message-block';
+
+    const msg = document.createElement('div');
+    msg.className = 'message ' + sender;
+    msg.innerText = text;
+
+    block.appendChild(msg);
+    chat.appendChild(block);
+
+    scrollArea.scrollTop = scrollArea.scrollHeight;
+  }
+
+  function sendMessage() {
+    const question = input.value.trim();
+    if (!question) return;
+
+    addMessage(question, 'user');
+    input.value = '';
+    input.disabled = true;
+
+    fetch('/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: question })
+    })
+    .then(res => res.json())
+    .then(data => {
+      addMessage(data.result, 'bot');
+    })
+    .catch(err => {
+      console.error(err);
+      addMessage("⚠️ Error: Something went wrong.", 'bot');
+    })
+    .finally(() => {
+      input.disabled = false;
+      input.focus();
+    });
+  }
+
+  input.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+</script>
+
+</body>
+</html>
