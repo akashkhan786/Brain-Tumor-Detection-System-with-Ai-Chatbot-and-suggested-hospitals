@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brain Tumor Detection System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: url("{{ url_for('static', filename='images/h4.jpeg') }}") no-repeat center center fixed;
+      background-size: cover;
+      min-height: 100vh;
+    }
+
+    .navbar {
+      background-color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+    }
+
+    .navbar-items a {
+      font-weight: 500;
+      color: #333;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .navbar-items a:hover,
+    .navbar-items a.active {
+      background-color: #000;
+      color: #fff !important;
+    }
+
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+      background-color: #000;
+      border: none;
+      border-radius: 8px;
+    }
+
+    .btn-primary:hover {
+      background-color: #222;
+    }
+
+    #chatbotButton {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #17a2b8;
+      width: 60px;
+      height: 60px;
+      color: white;
+      font-size: 28px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    #chatWindow {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 320px;
+      height: 420px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      display: none;
+      flex-direction: column;
+      z-index: 999;
+    }
+
+    .chatbox {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+
+    .message p {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+    }
+
+    .message.user p {
+      background-color: #007bff;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .message.bot p {
+      background-color: #f1f1f1;
+      align-self: flex-start;
+    }
+
+    .input-group {
+      padding: 10px;
+      border-top: 1px solid #ddd;
+    }
+
+    .input-group input {
+      border-radius: 6px;
+    }
+    
+    /* New styles for full-width report */
+    .medical-report {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    .report-header {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: white;
+      padding: 25px 30px;
+    }
+    
+    .report-header h2 {
+      margin: 0;
+      font-weight: 700;
+    }
+    
+    .report-header p {
+      margin: 5px 0 0;
+      opacity: 0.9;
+    }
+    
+    .report-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 400px;
+    }
+    
+    .report-image {
+      padding: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f9f9f9;
+      border-right: 1px solid #eee;
+    }
+    
+    .report-image img {
+      max-width: 100%;
+      max-height: 350px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .report-details {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .report-section {
+      margin-bottom: 25px;
+    }
+    
+    .report-section h3 {
+      color: #1e3c72;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #eee;
+    }
+    
+    .report-item {
+      margin-bottom: 12px;
+    }
+    
+    .report-item strong {
+      display: inline-block;
+      width: 140px;
+      color: #555;
+    }
+    
+    .result-banner {
+      padding: 15px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .report-footer {
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      text-align: center;
+    }
+    
+    .back-btn {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+    }
+    
+    .btn i {
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="#">HealthCare AI</a>
+        <div class="navbar-items d-flex ms-auto">
+          <a href="#" class="nav-link">Home</a>
+          <a href="#" class="nav-link">Prediction</a>
+          <a href="{{ url_for('chatbot_page') }}" class="nav-link">AI Chatbot</a>
+          <a href="#" class="nav-link active">Hospitals</a>
+        </div>
+      </div>
+  </nav>
+
+  <!-- MAIN SECTION -->
+  <section class="py-5">
+    <div class="container">
+      <div class="row justify-content-center">
+
+        <!-- Upload Section -->
+        <div class="col-lg-6" id="uploadSection">
+          <div class="card p-4">
+            <h5 class="mb-3">Upload MRI Image</h5>
+            <form method="post" enctype="multipart/form-data">
+              <div class="mb-3">
+                <input type="file" class="form-control" name="file" accept="image/*" required />
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Upload and Detect</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="col-lg-10" id="resultSection" style="display: none;">
+          {% if result %}
+          <div class="medical-report">
+            <div class="report-header">
+              <h2>Medical Imaging Report</h2>
+              <p>AI-Powered Brain Tumor Detection</p>
+            </div>
+            
+            <div class="report-content">
+              <div class="report-image">
+                <img id="mriImage" src="{{ file_path }}" alt="MRI Scan Image" />
+              </div>
+              
+              <div class="report-details">
+                <div class="report-section">
+                  <h3>Image Analysis</h3>
+                  <div class="report-item">
+                    <strong>Uploaded Image:</strong> MRI Scan
+                  </div>
+                  <div class="report-item">
+                    <strong>Analysis Date:</strong> <span id="report-date"></span>
+                  </div>
+                </div>
+                
+                <div class="report-section">
+                  <h3>Detection Results</h3>
+                  <div class="report-item">
+                    <strong>Predicted Result:</strong> <span id="tumor-type" class="text-capitalize fw-bold">{{ result }}</span>
+                  </div>
+                  <div class="report-item">
+                    <strong>Confidence Score:</strong> {{ confidence }}%
+                  </div>
+                  <div id="prediction-box" class="result-banner"></div>
+                </div>
+                
+                <div class="report-section">
+                  <h3>Clinical Notes</h3>
+                  <p id="clinical-notes"></p>
+                </div>
+                
+                <div class="report-footer">
+                  <p>Generated by: <strong>AI Detection System</strong></p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="text-center mt-4">
+            <button id="backButton" class="btn back-btn" onclick="goBack()">
+              <i class="fas fa-arrow-left"></i> Analyze Another Image
+            </button>
+            <button class="btn btn-primary" onclick="downloadReport()">
+              <i class="fas fa-download"></i> Download Report
+            </button>
+            <button class="btn btn-success" onclick="shareReport()">
+              <i class="fas fa-share-alt"></i> Share Report
+            </button>
+          </div>
+
+          <script>
+    // Set current date
+    document.getElementById('report-date').textContent = new Date().toLocaleDateString();
+    
+    const prediction = "{{ result }}".toLowerCase();
+    const box = document.getElementById("prediction-box");
+    const image = document.getElementById("mriImage");
+    const clinicalNotes = document.getElementById("clinical-notes");
+
+    const styles = {
+      glioma: { 
+        color: "#DC143C", 
+        text: "Glioma tumor found. Please consult your neurologist.",
+        notes: "Gliomas are tumors that originate in the brain's glial cells. They can vary from slow-growing to aggressive forms. Further evaluation with contrast-enhanced MRI and possibly biopsy is recommended."
+      },
+      meningioma: { 
+        color: "#4169E1", 
+        text: "Meningioma detected. Medical checkup recommended.",
+        notes: "Meningiomas are typically slow-growing tumors arising from the meninges. Most are benign but may require monitoring or treatment depending on size and symptoms."
+      },
+      pituitary: { 
+        color: "#DAA520", 
+        text: "Pituitary tumor identified. Consult an endocrine specialist.",
+        notes: "Pituitary tumors can affect hormone production. Evaluation of endocrine function and consultation with a neuroendocrinologist is advised."
+      },
+      notumor: { 
+        color: "#228B22", 
+        text: "No signs of brain tumor. You're all clear!",
+        notes: "No evidence of tumor was detected in this MRI scan. Continue with regular checkups as recommended by your healthcare provider."
+      }
+    };
+
+    if (styles[prediction]) {
+      box.style.backgroundColor = styles[prediction].color;
+      box.innerText = styles[prediction].text;
+      clinicalNotes.textContent = styles[prediction].notes;
+    } else {
+      box.style.backgroundColor = "gray";
+      box.innerText = "Unknown tumor type.";
+      clinicalNotes.textContent = "The analysis returned an unclear result. Please consult with a radiologist for further evaluation.";
+    }
+
+    // Show result section and hide upload form
+    document.getElementById('uploadSection').style.display = 'none';
+    document.getElementById('resultSection').style.display = 'block';
+
+    // Go back to upload form
+    function goBack() {
+      document.getElementById('uploadSection').style.display = 'block';
+      document.getElementById('resultSection').style.display = 'none';
+    }
+    
+    // Function to add signature and convert to image
+    async function generateReportImage() {
+      const reportElement = document.querySelector('.medical-report');
+      
+      // Create signature element
+      const signature = document.createElement('div');
+      signature.style.textAlign = 'center';
+      signature.style.margin = '20px 0';
+      signature.style.padding = '15px 0';
+      signature.style.borderTop = '1px solid #eee';
+      signature.style.fontFamily = 'Roboto, sans-serif';
+      signature.innerHTML = `
+        <div style="margin-bottom: 5px;">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="height: 30px; margin-right: 10px; vertical-align: middle;">
+          <span style="vertical-align: middle; font-weight: 600;">HealthCare AI</span>
+        </div>
+        <div style="font-style: italic; color: #555;">AI-Powered Medical Diagnosis</div>
+        <div style="margin-top: 10px;">Generated by: <strong>AI Detection System</strong></div>
+      `;
+      
+      // Append signature temporarily
+      reportElement.appendChild(signature);
+      
+      // Load html2canvas if needed
+      if (typeof html2canvas === 'undefined') {
+        await new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+          script.onload = resolve;
+          document.body.appendChild(script);
+        });
+      }
+      
+      // Convert to canvas
+      const canvas = await html2canvas(reportElement, {
+        scale: 2,
+        logging: false,
+        useCORS: true
+      });
+      
+      // Remove signature after capture
+      reportElement.removeChild(signature);
+      
+      return canvas;
+    }
+    
+    // Share report function
+    async function shareReport() {
+      try {
+        const canvas = await generateReportImage();
+        const imageData = canvas.toDataURL('image/jpeg', 0.9);
+        const result = "{{ result }}";
+        const confidence = "{{ confidence }}";
+        const message = `Brain Tumor Detection Report:\n\nResult: ${result}\nConfidence: ${confidence}%\n\nGenerated by HealthCare AI - AI Detection Model`;
+        
+        if (navigator.share) {
+          // Convert canvas to blob for sharing
+          canvas.toBlob(async (blob) => {
+            const file = new File([blob], 'Brain_Report.jpg', { type: 'image/jpeg' });
+            try {
+              await navigator.share({
+                title: 'Brain Tumor Detection Report',
+                text: message,
+                files: [file]
+              });
+            } catch (err) {
+              console.error('Share failed:', err);
+              downloadImage();
+            }
+          }, 'image/jpeg', 0.9);
+        } else {
+          // Fallback for browsers without Web Share API
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}%0A%0A${encodeURIComponent('View Report: ')}`;
+          const newWindow = window.open(whatsappUrl, '_blank');
+          
+          if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+            // If popup blocked, show download option
+            if (confirm('Would you like to download the report image to share?')) {
+              downloadImage();
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error generating report image:', error);
+        alert('Could not generate image report. Using text sharing instead.');
+        shareTextReport();
+      }
+    }
+    
+    // Download report function
+    async function downloadReport() {
+      try {
+        const canvas = await generateReportImage();
+        const date = new Date().toLocaleDateString().replace(/\//g, '-');
+        
+        // Show format options
+        const format = confirm('Download as:\n\nOK - JPG (Recommended for sharing)\nCancel - PNG (Higher quality)') ? 'jpeg' : 'png';
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL(`image/${format}`, format === 'jpeg' ? 0.9 : 1);
+        link.download = `Brain_Tumor_Report_${date}.${format}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error('Error generating image report:', error);
+        alert('Could not generate image report. Downloading text version instead.');
+        downloadTextReport();
+      }
+    }
+    
+    // Fallback text functions
+    function shareTextReport() {
+      const result = "{{ result }}";
+      const confidence = "{{ confidence }}";
+      const message = `Brain Tumor Detection Report:\n\nResult: ${result}\nConfidence: ${confidence}%\n\nGenerated by HealthCare AI - AI Detection Model`;
+      prompt('Copy this report to share:', message);
+    }
+    
+    function downloadTextReport() {
+      const result = "{{ result }}";
+      const confidence = "{{ confidence }}";
+      const date = new Date().toLocaleDateString();
+      const content = `Brain Tumor Detection Report\n----------------------------\nDate: ${date}\n\nResults:\n- Predicted Result: ${result}\n- Confidence Score: ${confidence}%\n\nClinical Notes:\n${clinicalNotes.textContent}\n\nGenerated by HealthCare AI\nSignature: AI Detection Model`;
+      
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Brain_Tumor_Report_${date.replace(/\//g, '-')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    // Helper function for image download
+    async function downloadImage() {
+      const canvas = await generateReportImage();
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/jpeg', 0.9);
+      link.download = `Brain_Tumor_Report_${new Date().toLocaleDateString().replace(/\//g, '-')}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+</script>
+
+<!-- Add html2canvas library for image capture -->
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+          {% else %}
+          <p>No result available</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHATBOT -->
+  <div id="chatbotButton" onclick="toggleChatWindow()">🤖</div>
+  <div id="chatWindow">
+    <div class="chatbox" id="chat-box"></div>
+    <div class="input-group">
+      <input type="text" id="user-input" class="form-control" placeholder="Ask me anything..." />
+      <button id="send-btn" class="btn btn-outline-secondary">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // Toggle chat
+    function toggleChatWindow() {
+      const chat = document.getElementById("chatWindow");
+      chat.style.display = (chat.style.display === "none" || chat.style.display === "") ? "flex" : "none";
+    }
+
+    // Handle message send
+    document.getElementById("send-btn").addEventListener("click", () => {
+      const input = document.getElementById("user-input");
+      const msg = input.value.trim();
+      if (msg) {
+        addMessage(msg, 'user');
+        input.value = "";
+        fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: msg })
+        })
+          .then(res => res.json())
+          .then(data => addMessage(data.result, 'bot'))
+          .catch(err => console.error(err));
+      }
+    });
+
+    // Display messages
+    function addMessage(text, sender) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = `message ${sender}`;
+      const p = document.createElement("p");
+      p.textContent = text;
+      msgDiv.appendChild(p);
+      document.getElementById("chat-box").appendChild(msgDiv);
+    }
+
+    // Initialize hidden
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("chatWindow").style.display = "none";
+    });
+  </script>
+
+  <!-- Font Awesome for icons -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+</body>
+</html>
