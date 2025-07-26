@@ -12,15 +12,24 @@ import numpy as np
 import pandas as pd
 import os
 import re
+import gdown
 from fuzzywuzzy import fuzz, process
 
 # -------------------------- Flask Setup --------------------------
 app = Flask(__name__)
 load_dotenv(find_dotenv())
 
+# -------------------- Model Download from Google Drive --------------------
+model_path = "Final_Clean_Model.keras"
+if not os.path.exists(model_path):
+    print("Downloading model from Google Drive...")
+    gdown.download("https://drive.google.com/uc?id=1caDks3dokBQgyc9eMu04gwGsSG47g5nE", model_path, quiet=False)
+else:
+    print("✅ Model already exists. Skipping download.")
+
 # -------------------- Image Model Configuration --------------------
-model = load_model('../Resnet_model/model/best_model.keras', compile=False)
-class_labels = ['glioma', 'notumor','meningioma', 'pituitary']
+model = load_model(model_path, compile=False)
+class_labels = ['glioma', 'notumor', 'meningioma', 'pituitary']
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'Resnet_model', 'uploads')
 if not os.path.exists(UPLOAD_FOLDER):
@@ -83,10 +92,8 @@ def load_hospital_data():
     file_path = '../Chatbot/data/hospital_data.csv'
     if os.path.exists(file_path):
         df = pd.read_csv(file_path)
-        # Clean data
         df = df.dropna(how='all')
         df = df.fillna('Not Available')
-        # Standardize columns
         df.columns = [col.strip().upper() for col in df.columns]
         return df
     return pd.DataFrame()
@@ -97,8 +104,6 @@ class HospitalChatbot:
         self.current_results = pd.DataFrame()
         self.current_page = 0
         self.page_size = 5
-        
-        # Attribute mapping dictionary
         self.attribute_map = {
             'CONTACT': ['contact', 'phone', 'number', 'mobile', 'phone no', 'mobile no'],
             'ADDRESS': ['address', 'location', 'where is', 'located', 'place'],
@@ -116,23 +121,14 @@ class HospitalChatbot:
 
     def fuzzy_search_hospitals(self, query, city=None):
         query = query.lower()
-        
-        # Filter by city if mentioned
         df = self.df
         if city:
             df = df[df['CITY'].str.lower() == city.lower()]
-        
-        # Search in hospital names with fuzzy matching
         hospitals = df['HOSPITAL NAME'].tolist()
         matches = process.extract(query, hospitals, scorer=fuzz.partial_ratio, limit=10)
-        
-        # Get matches with score > 70
         matched_hospitals = [match[0] for match in matches if match[1] > 70]
-        
         if matched_hospitals:
             return df[df['HOSPITAL NAME'].isin(matched_hospitals)]
-        
-        # Fallback to searching in all fields
         return df[df.apply(lambda row: any(query in str(row[col]).lower() 
                           for col in ['HOSPITAL NAME', 'ADDRESS', 'CITY']), axis=1)]
 
@@ -140,16 +136,13 @@ class HospitalChatbot:
         start = self.current_page * self.page_size
         end = start + self.page_size
         self.current_page += 1
-        
         if start >= len(self.current_results):
             return None
-        
         return self.current_results.iloc[start:end]
 
     def format_response(self, hospitals, specific_info=None):
         if hospitals.empty:
             return "No hospitals found."
-            
         responses = []
         for _, row in hospitals.iterrows():
             response = []
@@ -163,87 +156,45 @@ class HospitalChatbot:
                 for col in ['CITY', 'ADDRESS', 'CONTACT', 'DOCTORS']:
                     if col in row and row[col] != 'Not Available':
                         response.append(f"📍 {col}: {row[col]}" if col == 'ADDRESS' else f"📞 {col}: {row[col]}")
-            
             responses.append("\n".join(response))
-        
         return "\n\n".join(responses)
 
     def handle_query(self, query):
-        # Handle basic greetings
         if re.search(r'\b(hi|hello|hey|whatsup|what\'s up|salam|assalamualaikum)\b', query.lower()):
-            return {
-                "result": "Hi! How can I help you today?",
-                "source": "System"
-            }
-
-        # Check if asking for more results
+            return {"result": "Hi! How can I help you today?", "source": "System"}
         if any(word in query.lower() for word in ['more', 'next', 'further']):
             next_page = self.get_next_page()
             if next_page is not None:
-                return {
-                    "result": self.format_response(next_page),
-                    "source": "Hospital database"
-                }
-            return {
-                "result": "No more hospitals available.",
-                "source": "System"
-            }
-        
-        # Check if asking for specific information
+                return {"result": self.format_response(next_page), "source": "Hospital database"}
+            return {"result": "No more hospitals available.", "source": "System"}
         column = self.map_query_to_column(query)
-        
-        # Extract hospital name if mentioned
         hospital_name = None
         for name in self.df['HOSPITAL NAME']:
             if name.lower() in query.lower():
                 hospital_name = name
                 break
-        
-        # If specific hospital mentioned
         if hospital_name:
             hospital_data = self.df[self.df['HOSPITAL NAME'] == hospital_name]
             if not hospital_data.empty:
                 if column:
-                    return {
-                        "result": self.format_response(hospital_data, column),
-                        "source": "Hospital database"
-                    }
-                return {
-                    "result": self.format_response(hospital_data),
-                    "source": "Hospital database"
-                }
-            return {
-                "result": f"Hospital '{hospital_name}' not found.",
-                "source": "System"
-            }
-        
-        # Search for hospitals in city
+                    return {"result": self.format_response(hospital_data, column), "source": "Hospital database"}
+                return {"result": self.format_response(hospital_data), "source": "Hospital database"}
+            return {"result": f"Hospital '{hospital_name}' not found.", "source": "System"}
         city = None
         for known_city in self.df['CITY'].unique():
             if known_city.lower() in query.lower():
                 city = known_city
                 break
-        
-        # Perform search
         self.current_results = self.fuzzy_search_hospitals(query, city)
         self.current_page = 0
-        
         first_page = self.get_next_page()
         if first_page is not None:
-            response = {
-                "result": self.format_response(first_page),
-                "source": "Hospital database"
-            }
+            response = {"result": self.format_response(first_page), "source": "Hospital database"}
             if len(self.current_results) > self.page_size:
                 response["result"] += "\n\nSay 'more' to see additional results."
             return response
-        
-        return {
-            "result": "No hospitals found matching your query.",
-            "source": "System"
-        }
+        return {"result": "No hospitals found matching your query.", "source": "System"}
 
-# Initialize hospital data and chatbot
 df_hospitals = load_hospital_data()
 hospital_chatbot = HospitalChatbot(df_hospitals)
 
@@ -269,20 +220,14 @@ def ask():
     try:
         user_query = request.json.get('query')
         page = int(request.json.get('page', 1))
-        
-        # Handle the query using our enhanced chatbot
         response = hospital_chatbot.handle_query(user_query)
-        
-        # If no results from direct search, fallback to RAG
         if "No hospitals found" in response["result"]:
             rag_response = qa_chain.invoke({'query': user_query})
             return jsonify({
                 "result": rag_response.get("result"),
                 "source_documents": [doc.page_content for doc in rag_response.get("source_documents", [])]
             })
-        
         return jsonify(response)
-    
     except Exception as e:
         app.logger.error(f"Error in /ask endpoint: {str(e)}")
         return jsonify({
@@ -300,10 +245,8 @@ def uploaded_file(filename):
 
 # -------------------------- Run App --------------------------
 if __name__ == '__main__':
-    # Verify data loaded correctly
     if df_hospitals.empty:
         print("Warning: Hospital data failed to load or is empty!")
     else:
         print(f"Hospital data loaded successfully with {len(df_hospitals)} records")
-    
     app.run(debug=True, use_reloader=False)
