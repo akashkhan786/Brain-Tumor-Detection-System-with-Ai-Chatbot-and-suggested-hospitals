@@ -31,8 +31,6 @@ Suggested Hospital System based on fuzzy search from CSV data
 
    **CSV files**
    Free public data using fuzzy search and query handling
-
-
   **Hospital**
 
  In chabot you can easily asked about hospitals and you can filter out in query some specific data like (_ hospitals contact no ? ,where is  _hospitals ? , is in this city any hospitals ?) and fuzzy query matching
@@ -48,8 +46,8 @@ All dependencies are listed in `requirements.txt`.
 
 1. Download and add the following **manually**:
 
-    `prediction_model.keras` (VGG16 model weights)
-    `vectorstore` memory/database for the chatbot
+    `model link below` (VGG16 model weights)
+    `vectorstore` memory/database for the chatbot link below
 2. Ensure all required Python packages are installed:
 
    
@@ -59,17 +57,25 @@ All dependencies are listed in `requirements.txt`.
 
  **Folder Contents**
 In main folder fyp_project there is :
-Chatbot
-Integration
-Resnet_model
+app : coding
+static : images
+uploads : To upload images for prediction
+templates : frontend template
+model : predicted model 
 
- Resnet_model/ – Code for VGG16-based tumor classification
+ Chatbot/ – Code for VGG16-based tumor classification
  Chatbot/ – Code for AI chatbot using Mistral 7B
  Chatbot/data/ – CSV files for hospital information
  requirements.txt – Python packages needed
  README.md – This file
 
-
+   **Dataset for clases prediction**
+   link:https://drive.google.com/drive/folders/1CTMBVnEqq04-94y9M9zPmTMPMtpQhIBD?usp=drive_link
+   **Model**
+   link :https://drive.google.com/file/d/1caDks3dokBQgyc9eMu04gwGsSG47g5nE/view?usp=drive_link
+   **Data for chatbot**
+   link:https://drive.google.com/drive/folders/1f-GdwDetwcG_P3TibDVZAXefak5wS1hE?usp=drive_link
+   
   **How to Run**
 
 1. Ensure you have the full files mentioned above.
