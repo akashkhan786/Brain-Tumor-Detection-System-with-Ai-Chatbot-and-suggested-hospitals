@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<style>
+   
+   body {
+      background-color: rgb(194, 191, 189);
+      background-image: url("{{ url_for('static', filename='images/h4.jpeg') }}");
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      margin: 0;
+      height: 100vh;
+   }
+
+   img {
+      width: 60px;
+      height: 30px;
+      border: 5px solid;
+      border-radius: 10px;
+   }
+
+   .navbar-items {
+      display: flex;
+      margin-top: 10px;
+      margin-right: 340px !important;
+   }
+
+   .navbar-items li {
+      list-style: none;
+   }
+
+   .navbar-items li a {
+      /* background-color: rgb(255, 255, 255); */
+      /* font-weight: bold; */
+      margin-left: 30px;
+      padding: 5px 15px;
+      color:black;
+      text-decoration-line: none;
+      border-radius: 10px;
+   }
+   .navbar-items li a:hover{
+     background-color: black;
+      color: white;
+   }
+
+   p {
+      margin-top: 30px;
+      font-size: 20px;
+   }
+
+   #chatbotButton { 
+   position: fixed;
+   bottom: 20px;
+   right: 20px; 
+   width: 60px;
+   height: 60px;
+   background-color: #1cc2c2;
+   color: white;
+   border-radius: 50%;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   font-size: 24px;
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+   cursor: pointer;
+   z-index: 1000;
+}
+
+#chatbotButton:hover {
+   background-color: #f0ebe7;
+}
+
+/* Chat window settings */
+#chatWindow {
+   position: fixed;
+   bottom: 80px;
+   right: 20px;
+   width: 300px;
+   height: 400px;
+   background-color: white;
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+   border-radius: 10px;
+   display: none; /* Ensure it's hidden by default */
+   flex-direction: column;
+   z-index: 999;
+   display: flex;
+   justify-content: space-between;
+}
+
+/* Chatbox */
+#chatWindow .chatbox {
+   flex: 1;
+   padding: 10px;
+   overflow-y: auto;  /* Allow manual scrolling */
+   display: flex;
+   flex-direction: column-reverse; /* User's message appears from bottom to top */
+}
+
+/* Input area settings */
+#chatWindow .input-group {
+   border-top: 1px solid #ddd;
+   padding: 10px;
+   display: flex;
+}
+
+#chatWindow .input-group input {
+   flex: 1;
+   padding: 8px;
+   border-radius: 5px;
+   border: 1px solid #ddd;
+}
+
+/* Message styles */
+.message.bot p {
+   background-color: #f1f1f1;
+   padding: 8px;
+   border-radius: 5px;
+   max-width: 80%;
+   align-self: flex-start;
+   /* font-size: 12px;  */
+}
+
+.message.user p {
+   background-color: #E68C35;
+   color: white;
+   padding: 8px;
+   border-radius: 5px;
+   max-width: 80%;
+   align-self: flex-end;
+   /* font-size: 12px; */
+}
+
+/* Styling for the input field */
+input[type="text"]:focus {
+   outline: none;
+   border-color: #007bff;
+}
+
+
+</style>
+<body>
+   <div class="container">
+      <nav class="navbar navbar-light">
+         <div class="container">
+            <a class="navbar-brand" href="#">
+               HealthCare
+            </a>
+            <ul class="navbar-items">
+               <li><a href="#">Home</a></li>
+               <li><a href="#">Prediction</a></li>
+               <li><a href="#">AI chatbot</a></li>
+               <li><a href="#" style="color: WHITE;background-color:black;" >Hospitals</a></li>
+            </ul>
+         </div>
+      </nav>
+   </div>
+   
+   <!-- Prediction Section -->
+   <section id="prediction" class="py-5"> 
+      <div class="container">
+          <div class="row">
+              <!-- Left Column: File Upload -->
+              <div class="col-md-6">
+                  <div class="card-show p-4 mt-4">
+                      <form method="post" enctype="multipart/form-data">
+                          <div class="mb-3">
+                              <label for="file" class="form-label">  Select MRI Image</label>
+                              <input type="file" class="form-control" name="file" accept="image/*" required>
+                          </div>
+                          <button type="submit" class="btn " style="background-color:BLACK ;color: WHITE; " >Upload and Detect</button>
+                      </form>
+                  </div>
+              </div>
+              
+              <!-- Right Column: Display Results -->
+              <div class="col-md-6">
+                  {% if result %}
+                      <div class="results mt-4">
+                          <div class="card shadow">
+                              <div class="card-body">
+                                  <h3 class="card-title"><small style="color: red;">Result: </small> {{ result }}</h3>
+                                  <p class="card-text text-muted"> Confidence: {{ confidence }}</p>
+                                  <img src="{{ file_path }}" class="img-fluid large-img rounded" alt="Uploaded Image" style="width: 80%;  max-width: 100% !important ; height: auto;">
+                              </div>
+                          </div>
+                      </div>
+                  {% else %}
+                      <p>No result available</p>
+                  {% endif %}
+              </div>
+          </div>
+      </div>
+  </section>
+               
+  <div id="chatbotButton" onclick="toggleChatWindow()">🤖</div>
+
+<!-- Chat Window -->
+<div id="chatWindow">
+   <div class="chatbox" id="chat-box">
+      <!-- Chat messages will appear here -->
+   </div>
+   <div class="input-group">
+      <input type="text" id="user-input" class="chat-input" placeholder="Ask me anything..." />
+      <button id="send-btn" class="send-btn">Send</button>
+   </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+   const chatWindow = document.getElementById('chatWindow');
+   chatWindow.style.display = 'none'; // Hide chat window when page loads
+});
+
+// Toggle the visibility of the chat window
+function toggleChatWindow() {
+   const chatWindow = document.getElementById('chatWindow');
+   if (chatWindow.style.display === 'none' || chatWindow.style.display === '') {
+      chatWindow.style.display = 'flex'; 
+   } else {
+      chatWindow.style.display = 'none'; 
+   }
+}
+
+// Handle sending a message to the chatbot
+document.getElementById('send-btn').addEventListener('click', function () {
+   const userQuery = document.getElementById('user-input').value;
+   if (userQuery.trim() !== "") {
+      addMessage(userQuery, 'user'); // Add user message
+      document.getElementById('user-input').value = ''; // Clear input field
+
+      // Simulate a fetch request to get the bot response
+      fetch('/ask', {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({ query: userQuery }),
+      })
+      .then(response => response.json())
+      .then(data => {
+         const botResponse = data.result;
+         addMessage(botResponse, 'bot'); // Add bot response
+      })
+      .catch(error => {
+         console.error('Error:', error);
+      });
+   }
+});
+
+// Function to add a message to the chat box
+function addMessage(message, className) {
+   const chatBox = document.getElementById('chat-box');
+   const messageDiv = document.createElement('div');
+   messageDiv.className = `message ${className}`;
+   const messageText = document.createElement('p');
+   messageText.textContent = message;
+   messageDiv.appendChild(messageText);
+   chatBox.appendChild(messageDiv);
+}
+</script>
+</body>
+</html>
